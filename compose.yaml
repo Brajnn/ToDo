@@ -1,0 +1,42 @@
+version: '3.8'
+
+services:
+  todowebapi:
+    build:
+      context: .
+      dockerfile: ToDo.WebAPI/Dockerfile
+    ports:
+      - "8080:8080"
+    depends_on:
+      tododb:
+        condition: service_healthy
+    networks:
+      - backend-network
+    env_file:
+      - .env
+    environment:
+      - ConnectionStrings__DefaultConnection=Server=tododb;Port=3306;Database=${MYSQL_DATABASE};User=${MYSQL_USER};Password=${MYSQL_PASSWORD};
+
+  tododb:
+    image: mysql:8.0
+    container_name: tododb
+    restart: always
+    ports:
+      - "3306:3306"
+    env_file:
+      - .env
+    volumes:
+      - tododb-data:/var/lib/mysql
+    networks:
+      - backend-network
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "${MYSQL_USER}", "-p${MYSQL_PASSWORD}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  tododb-data:
+
+networks:
+  backend-network:
